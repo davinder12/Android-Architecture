@@ -40,7 +40,6 @@ android {
     flavorDimensions 'env'
     productFlavors {
         dev {
-
             buildConfigField 'String', 'API_URL', '"https://aap-why-waste.com"'
 
         }
@@ -82,6 +81,7 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.2.10'
     implementation 'io.reactivex.rxjava2:rxkotlin:2.3.0'
     implementation 'com.jakewharton.rxbinding3:rxbinding-appcompat:3.0.0-alpha2'
+    implementation 'androidx.lifecycle:lifecycle-reactivestreams-ktx:2.0.0'
 
 
     // retrofit library

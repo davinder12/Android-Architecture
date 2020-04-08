@@ -47,4 +47,20 @@ interface IRetrofitNetworkRequestCallback<RemoteType : Any> : INetworkRequestCal
     }
 
     override fun isSuccess(response: Response<RemoteType>) = response.isSuccessful
+
+
+
+    /**
+     * Implementation of [INetworkResourceCallback] for Retrofit and [Response]
+     */
+    interface IRetrofitNetworkResourceCallback<LocalType, RemoteType : Any> :
+        INetworkResourceCallback<LocalType, RemoteType, Response<RemoteType>>,
+        IRetrofitNetworkRequestCallback<RemoteType> {
+
+        override fun extractData(response: Response<RemoteType>): RemoteType {
+            return requireNotNull(response.body())
+        }
+    }
+
+
 }
