@@ -1,23 +1,21 @@
 package com.android.savery.data.network
 
 import androidx.lifecycle.LiveData
+import com.sdi.joyersmajorplatform.uiview.NetworkState
 import io.reactivex.Maybe
 
 /**
  * Interface for UI interaction with resources
  */
 interface IResource<T> {
-
     /**
      * Refresh the resource
      */
     fun refresh()
-
     /**
      * The resource data
      */
     val data: LiveData<T>
-
     /**
      * The refresh status of the resource
      * Refresh also triggers networkState
@@ -31,6 +29,7 @@ interface IResource<T> {
 
     fun retry(networkState: NetworkState)
 }
+
 
 /**
  * Interface for UI interaction with resources
@@ -46,5 +45,7 @@ interface IRequest<T> {
 
     val request: Maybe<T>
 
+
     fun retry(networkState: NetworkState)
 }
+

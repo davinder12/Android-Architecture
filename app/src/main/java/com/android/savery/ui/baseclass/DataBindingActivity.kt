@@ -1,6 +1,5 @@
 package com.android.savery.ui.baseclass
 
-import android.app.AlertDialog
 import android.os.Bundle
 import androidx.annotation.LayoutRes
 import androidx.databinding.DataBindingUtil
@@ -12,7 +11,7 @@ import androidx.databinding.ViewDataBinding
 
 abstract class DataBindingActivity<TBinding : ViewDataBinding> : BaseDaggerActivity() {
     
-    var dialog: AlertDialog? = null
+
     /**
      * The Layout Resource ID for the activity. This is inflated automatically.
      */
@@ -43,10 +42,6 @@ abstract class DataBindingActivity<TBinding : ViewDataBinding> : BaseDaggerActiv
      */
     protected open fun onBindView(binding: TBinding) {}
 
-    override fun onDestroy() {
-        super.onDestroy()
-        dialog?.dismiss()
-        dialog = null
-    }
+
 }
 

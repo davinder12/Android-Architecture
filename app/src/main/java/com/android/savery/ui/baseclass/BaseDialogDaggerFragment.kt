@@ -1,6 +1,6 @@
 package com.android.savery.ui.baseclass
 
-import android.app.AlertDialog
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,31 +9,55 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.annotation.MainThread
+import androidx.annotation.StringRes
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.*
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.android.savery.di.ViewModelFactory
+import com.android.savery.ui.util.ResourceViewModel
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.sdi.joyersmajorplatform.uiview.NetworkState
+import com.sdi.joyersmajorplatform.uiview.recyclerview.DataBoundAdapterClass
+import dagger.android.AndroidInjector
+import dagger.android.DispatchingAndroidInjector
+import dagger.android.support.AndroidSupportInjection
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
+import dagger.android.support.HasSupportFragmentInjector
 import javax.inject.Inject
 
-abstract class BaseDialogDaggerFragment<TBinding : ViewDataBinding> : DialogFragment(){
+abstract class BaseDialogDaggerFragment<TBinding : ViewDataBinding> : BottomSheetDialogFragment(),
+    HasSupportFragmentInjector {
 
 
+    companion object{
+        const val INTEREST_KEY="interest"
+        const val PROFILE_KEY ="profile"
+        const val FLAG ="flag"
+    }
 
-     companion object{
-         const val INTEREST_KEY="interest"
-         const val PROFILE_KEY ="profile"
-         const val FLAG ="flag"
+    @Inject
+    lateinit var childFragmentInjector: DispatchingAndroidInjector<Fragment>
 
-     }
 
-    var dialog: AlertDialog? = null
+    override fun onAttach(context: Context) {
+        AndroidSupportInjection.inject(this)
+        super.onAttach(context)
+    }
+
+    override fun supportFragmentInjector(): AndroidInjector<Fragment>? {
+        return childFragmentInjector
+    }
+
+//    /**
+//     * The layout resource ID for the fragment. This is inflated automatically.
+//     */
+//    abstract var popUpDialog: Dialog?
 
     lateinit var activityContext: Context
 
@@ -48,21 +72,6 @@ abstract class BaseDialogDaggerFragment<TBinding : ViewDataBinding> : DialogFrag
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
-    /**
-     * Creates the [ViewDataBinding] for this view.
-     */
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = DataBindingUtil.inflate(inflater, layoutRes, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
-        activityContext = requireContext()
-        onBindView(binding)
-        binding.executePendingBindings()
-        return binding.root
-    }
 
     /**
      * Called during onCreate, immediately after the view has been inflated.
@@ -97,25 +106,113 @@ abstract class BaseDialogDaggerFragment<TBinding : ViewDataBinding> : DialogFrag
     }
 
     /**
+     * Creates the [ViewDataBinding] for this view.
+     */
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = DataBindingUtil.inflate(inflater, layoutRes, container, false)
+        binding.lifecycleOwner = viewLifecycleOwner
+        activityContext = requireContext()
+        onBindView(binding)
+        binding.executePendingBindings()
+        return binding.root
+    }
+
+    /**
      * Container for RxJava subscriptions.
      */
     private val subscriptions = CompositeDisposable()
 
 
+
     override fun onDestroy() {
         super.onDestroy()
-        dialog?.dismiss()
-        dialog = null
+        // subscriptions.dispose()
     }
 
-
-    fun showMessage(message: String?) {
+    private fun showMessage(message: String?) {
         message?.let {
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         }
+    }
 
+    protected fun bindNetworkState(
+        networkState: LiveData<NetworkState>,
+        @StringRes success: Int? = null,
+        @StringRes error: Int? = null,
+        loadingIndicator: View? = null,
+        onError: (() -> Unit)? = null,
+        onSuccess: (() -> Unit)? = null
+    ) {
+        networkState.observe(viewLifecycleOwner, Observer {
+            when(it.status){
+                NetworkState.Status.RUNNING->{
+                    dialog?.show()
+                    loadingIndicator?.visibility =View.VISIBLE
+                }
+                NetworkState.Status.FAILED -> {
+                    dialog?.dismiss()
+                    loadingIndicator?.visibility =View.GONE
+                    showMessage(it.msg)
+                }
+                NetworkState.Status.SUCCESS ->{
+                    dialog?.dismiss()
+                    loadingIndicator?.visibility = View.GONE
+                    success?.let {
+                        showMessage(resources.getString(it))
+                    }
+                    onSuccess?.invoke()
+                }
+            }
+        })
+    }
 
+    // TODO Need to refactor retryClick  funtionality
+    @SuppressLint("CheckResult")
+    protected fun <X : DataBoundAdapterClass<T, *>, T, R> initAdapter(
+        adapter: X,
+        recycler: RecyclerView,
+        viewModel: ResourceViewModel<R>,
+        list: LiveData<List<T>?>,
+        clickHandler: ((T) -> Unit)? = null
+    ): X {
+        recycler.adapter = adapter
+        list.observe(viewLifecycleOwner, adapter::submitList)
+        adapter.retryClicks.subscribe(viewModel::retry)
+        viewModel.networkState.observe(viewLifecycleOwner, adapter::setNetworkState)
+        clickHandler?.let { subscribe(adapter.clicks, it) }
+        return adapter
     }
 
 
+    @SuppressLint("CheckResult")
+    protected fun <X : DataBoundAdapterClass<T, *>, T> initAdapter(
+        adapter: X,
+        recycler: RecyclerView,
+        list: LiveData<List<T>?>,
+        clickHandler: ((T) -> Unit)? = null
+    ): X {
+        recycler.adapter = adapter
+        list.observe(viewLifecycleOwner) {
+            adapter.submitList(it?.toList())
+        }
+        clickHandler?.let { subscribe(adapter.clicks, it) }
+        return adapter
+    }
+
+
+    fun <X : DataBoundAdapterClass<T, *>, T> initAdapter(
+        adapter: X,
+        viewPager: ViewPager2,
+        data: LiveData<List<T>?>,
+        clickHandler: ((T) -> Unit)? = null
+    ): X {
+        viewPager.adapter = adapter
+        data.observe(this, adapter::submitList)
+        clickHandler?.let { subscribe(adapter.clicks, it) }
+        return adapter
+    }
 }

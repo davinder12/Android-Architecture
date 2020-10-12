@@ -15,16 +15,16 @@ class LoginFragmentViewModel @Inject constructor(private val userRepository: Use
    var loginResponse = MutableLiveData<LoginResponse>()
 
 
-    fun LoginApiHit(): LiveData<NetworkState> {
-        val request = userRepository.signInApi("dev.test@gmail.com", "123456").also { it ->
-            subscribe(it.request) {
-                it.body()?.let {
-                    loginResponse.postUpdate(it)
-                }
-            }
-        }
-        return request.networkState
-    }
+//    fun LoginApiHit(): LiveData<NetworkState> {
+//        val request = userRepository.signInApi("dev.test@gmail.com", "123456").also { it ->
+//            subscribe(it.request) {
+//                it.body()?.let {
+//                    loginResponse.postUpdate(it)
+//                }
+//            }
+//        }
+//        return request.networkState
+//    }
 
 
 }

@@ -4,6 +4,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import com.sdi.joyersmajorplatform.common.livedataext.postUpdate
+import com.sdi.joyersmajorplatform.uiview.NetworkState
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
@@ -30,10 +31,10 @@ open class NetworkRequest<ResponseType>
 //        get() =  responseLiveData
 
 
-    
+
 
     private val _networkState: MediatorLiveData<NetworkState> = MediatorLiveData()
-    
+
     override val networkState: LiveData<NetworkState> get() = _networkState
 
     override val request = prepareNetworkRequest()
@@ -46,7 +47,7 @@ open class NetworkRequest<ResponseType>
         val request = cb.createNetworkRequest() ?: return Maybe.empty()
         return request.doOnError {
             _networkState.postUpdate(cb.getExceptionState(it))
-           // Timber.e(it)
+            // Timber.e(it)
         }.doOnSubscribe {
             _networkState.postUpdate(NetworkState.loading)
         }
@@ -58,10 +59,9 @@ open class NetworkRequest<ResponseType>
     }
 
     private fun filterAndUpdateNetworkState(response: ResponseType): Boolean {
-       
         val filter = cb.isSuccess(response)
         if (filter) {
-             //responseLiveData.postUpdate(response)
+            //responseLiveData.postUpdate(response)
             _networkState.postUpdate(NetworkState.success)
         } else {
             _networkState.postUpdate(cb.getErrorState(response))
@@ -100,8 +100,10 @@ interface INetworkRequestCallback<ResponseType> {
         return NetworkState.error(it.localizedMessage)
     }
 
+
     /**
      * Called on success
      */
-    fun onSuccess(response: ResponseType) {}
+    fun onSuccess(response: ResponseType){}
 }
+

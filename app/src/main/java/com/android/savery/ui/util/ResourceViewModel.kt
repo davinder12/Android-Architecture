@@ -1,12 +1,11 @@
 package com.android.savery.ui.util
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
-import com.android.savery.data.extension.liveData
 import com.android.savery.data.network.IResource
-import com.android.savery.data.network.NetworkState
+import com.sdi.joyersmajorplatform.common.livedataext.liveData
 import com.sdi.joyersmajorplatform.common.livedataext.map
+import com.sdi.joyersmajorplatform.uiview.NetworkState
 
 
 /**
@@ -50,9 +49,7 @@ class ResourceViewModel<EntityType>(private var resource: LiveData<IResource<Ent
      * The network state of the resource.
      */
     val networkState: LiveData<NetworkState> by lazy {
-        Transformations.switchMap(resource) {
-            it.networkState
-        }
+        Transformations.switchMap(resource) { it.networkState }
     }
 
     /**
@@ -62,10 +59,17 @@ class ResourceViewModel<EntityType>(private var resource: LiveData<IResource<Ent
         it.data
     }
 
+
+    fun retry(networkState: NetworkState) {
+        resource.value?.retry(networkState)
+    }
+
     /**
      * Refresh resource data.
      */
     fun refresh() {
         resource.value?.refresh()
     }
+
+
 }

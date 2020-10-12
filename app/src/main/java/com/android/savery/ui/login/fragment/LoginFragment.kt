@@ -21,21 +21,7 @@ class LoginFragment : BaseDaggerFragment<FragmentLoginBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
      //   viewModel.LoginApiHit().observe()
-        viewModel.LoginApiHit().observe(viewLifecycleOwner, Observer {
-            when (it.status) {
-                NetworkState.Status.RUNNING -> {
-                    dialog?.show()
-                }
-                NetworkState.Status.FAILED -> {
-                    dialog?.dismiss()
-                    showMessage(it.msg)
-                }
-                NetworkState.Status.SUCCESS -> {
-                    dialog?.dismiss()
- //                   startActivity(Intent(requireContext(),DashboardActivity::class.java))
-                }
-            }
-        })
+
 
 
         viewModel.loginResponse.observe(viewLifecycleOwner, Observer {

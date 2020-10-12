@@ -3,39 +3,32 @@ package com.android.savery.ui.baseclass
 import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.annotation.MainThread
+import androidx.annotation.StringRes
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import com.android.savery.di.ViewModelFactory
-import dagger.android.support.DaggerFragment
+import com.google.android.material.snackbar.Snackbar
+import com.sdi.joyersmajorplatform.uiview.NetworkState
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.plusAssign
 import javax.inject.Inject
 
-abstract class BaseDaggerFragment<TBinding : ViewDataBinding> : DaggerFragment(){
+abstract class BaseDaggerFragment<TBinding : ViewDataBinding> : BaseBackStack() {
 
-
-
-     companion object{
-//         const val INTEREST_KEY="interest"
-//         const val PROFILE_KEY ="profile"
-//         const val FLAG ="flag"
-//         const val USERID = R.string.userId
-//         const val TOKEN = R.string.token
-
-     }
-
-    var dialog: AlertDialog? = null
 
     lateinit var activityContext: Context
 
@@ -94,6 +87,7 @@ abstract class BaseDaggerFragment<TBinding : ViewDataBinding> : DaggerFragment()
     fun <T> subscribe(stream: Observable<T>?, handler: (T) -> Unit) {
         if (stream == null) return
         subscriptions += stream.subscribe(handler) {
+            Log.e("ifnormation", "sdf" + it.message)
             //  Timber.e(it)
         }
     }
@@ -101,22 +95,68 @@ abstract class BaseDaggerFragment<TBinding : ViewDataBinding> : DaggerFragment()
     /**
      * Container for RxJava subscriptions.
      */
-    private val subscriptions = CompositeDisposable()
+     val subscriptions = CompositeDisposable()
 
 
     override fun onDestroy() {
         super.onDestroy()
-        dialog?.dismiss()
-        dialog = null
     }
 
-
-    fun showMessage(message: String?) {
+    private fun showMessage(message: String?) {
         message?.let {
             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         }
+    }
 
 
+     fun showSnackMessage(message:String?)
+     {
+         message?.let {
+             val snackBar = Snackbar.make(requireView(), it, Snackbar.LENGTH_SHORT)
+             snackBar.show()
+         }
+     }
+
+//    fun locationSnackMessage() {
+//        Snackbar.make(requireView(), R.string.gpsvalidation, Snackbar.LENGTH_LONG)
+//            .setAction(R.string.setting) {
+//                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+//                startActivity(intent)
+//            }.show()
+//    }
+
+
+    protected fun bindNetworkState(
+        networkState: LiveData<NetworkState>,
+        dialog: AlertDialog? = null,
+        @StringRes success: Int? = null,
+        @StringRes error: Int? = null,
+        loadingIndicator: View? = null,
+        onError: (() -> Unit)? = null,
+        onSuccess: (() -> Unit)? = null
+    ) {
+        networkState.observe(viewLifecycleOwner, Observer {
+            when(it.status){
+                NetworkState.Status.RUNNING-> {
+                    loadingIndicator?.visibility =View.VISIBLE
+                    dialog?.show()
+                }
+
+                NetworkState.Status.FAILED -> {
+                    showMessage(it.msg)
+                    loadingIndicator?.visibility =View.GONE
+                    dialog?.dismiss()
+                    onError?.invoke()
+
+                }
+                NetworkState.Status.SUCCESS -> {
+                    success?.let { showMessage(resources.getString(success)) }
+                    loadingIndicator?.visibility = View.GONE
+                    dialog?.dismiss()
+                    onSuccess?.invoke()
+                }
+            }
+        })
     }
 
 

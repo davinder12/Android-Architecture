@@ -8,6 +8,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.toLiveData
 import com.android.savery.data.extension.mediatorLiveData
 import com.sdi.joyersmajorplatform.common.livedataext.postUpdate
+import com.sdi.joyersmajorplatform.uiview.NetworkState
 
 import io.reactivex.Flowable
 import io.reactivex.Maybe
@@ -30,9 +31,10 @@ open class NetworkResource<LocalType, RemoteType, ResponseType>
     final override val networkState = networkRequest.networkState
 
 
-    private val _isRefreshing: MutableLiveData<Boolean> = mediatorLiveData(networkState) {
-        it?.let { if (it.status != NetworkState.Status.RUNNING) postValue(false) }
-    }
+    private val _isRefreshing: MutableLiveData<Boolean> =
+        com.sdi.joyersmajorplatform.common.livedataext.mediatorLiveData(networkState) {
+            it?.let { if (it.status != NetworkState.Status.RUNNING) postValue(false) }
+        }
 
     override val isRefreshing: LiveData<Boolean>
         get() = _isRefreshing
@@ -40,13 +42,13 @@ open class NetworkResource<LocalType, RemoteType, ResponseType>
     init {
         if (init) {
             val request = prepareNetworkRequest()
-
             data.addSource(request) {
                 data.value = it
                 data.removeSource(request)
             }
         }
     }
+
 
     override fun refresh() {
         _isRefreshing.postUpdate(true)
@@ -100,7 +102,8 @@ open class NetworkResource<LocalType, RemoteType, ResponseType>
 /**
  * Callback for [NetworkResource]
  */
-interface INetworkResourceCallback<LocalType, RemoteType, ResponseType> : INetworkRequestCallback<ResponseType> {
+interface INetworkResourceCallback<LocalType, RemoteType, ResponseType> :
+    INetworkRequestCallback<ResponseType> {
 
 //    var networkLimiter: NetworkLimiter?
 //    var networkId: Int
